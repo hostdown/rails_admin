@@ -80,6 +80,42 @@ module RailsAdmin
                   render text: output
                 end
               end
+              
+              format.pdf do
+                require 'prawn'
+                require 'prawn/table'
+                
+                header, encoding, output = CSVConverter.new(@objects, @schema).to_csv(params[:csv_options])
+                
+                output_array = output.split("\n").map{|x| x.split(',')}
+                
+                # Now we got the CSV output we can generate the PDF
+                pdf = Prawn::Document.new(:page_size => "A4", :page_layout => :landscape)
+
+                pdf.font "Helvetica"
+
+                # Defining the grid 
+                # See http://prawn.majesticseacreature.com/manual.pdf
+                pdf.define_grid(:columns => 5, :rows => 8, :gutter => 10) 
+                
+                pdf.text "#{I18n.t('activerecord.models.'+params[:model_name]+'.other')} (#{output_array.count-1})", :style => :bold_italic
+                pdf.stroke_horizontal_rule
+                
+                pdf.move_down 20
+                
+                pdf.font_size 7
+                pdf.table output_array, :header => true, :row_colors => ["f3f3f3", "FFFFFF"]
+                
+                pdf.move_down 20
+                pdf.stroke_horizontal_rule
+                
+                if params[:send_data]
+                  send_data pdf.render, filename: "#{params[:model_name]}_#{DateTime.now.strftime('%Y-%m-%d_%Hh%Mm%S')}.pdf", type: "application/pdf"
+                else
+                  render pdf: pdf.render
+                end
+              end
+              
             end
           end
         end

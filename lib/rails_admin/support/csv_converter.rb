@@ -89,14 +89,19 @@ module RailsAdmin
 
     def generate_csv_row(object)
       @fields.collect do |field|
-        field.with(object: object).export_value
-      end +
-        @associations.flat_map do |association_name, option_hash|
-          associated_objects = [object.send(association_name)].flatten.compact
-          option_hash[:fields].collect do |field|
-            associated_objects.collect { |ao| field.with(object: ao).export_value.presence || @empty }.join(',')
+        begin
+          field.with(object: object).export_value
+        rescue
+          if object.respond_to? field.name
+            if object.send(field.name).respond_to? :name
+              object.send(field.name).name
+            else
+              object.send(field.name).id
+            end
           end
+          
         end
+      end
     end
   end
 end
