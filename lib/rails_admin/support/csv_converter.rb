@@ -43,6 +43,7 @@ module RailsAdmin
       if @encoding_to != @encoding_from
         csv_string = csv_string.encode(@encoding_to, @encoding_from, invalid: :replace, undef: :replace, replace: '?')
       end
+      
       # Add a BOM for utf8 encodings, helps with utf8 auto-detect for some versions of Excel.
       # Don't add if utf8 but user don't want to touch input encoding:
       # If user chooses utf8, they will open it in utf8 and BOM will disappear at reading.
@@ -69,7 +70,8 @@ module RailsAdmin
       CSV.generate(generator_options) do |csv|
         csv << generate_csv_header unless options[:skip_header]
 
-        method = @objects.respond_to?(:find_each) ? :find_each : :each
+        method = @objects.respond_to?(:each) ? :each : :find_each
+        
         @objects.send(method) do |object|
           csv << generate_csv_row(object)
         end
